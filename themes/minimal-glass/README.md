@@ -26,6 +26,16 @@ Without latitude and longitude configured in the launcher:
 
 With coordinates configured, morning starts at sunrise and night starts 30 minutes after sunset. The launcher evaluates the wallpaper while Home is active; this is not a background scheduling service. The theme changes the backdrop, not the text palette.
 
+## App library and Home visibility
+
+The theme enables the launcher's existing App library, with one button in the top bar and no extra library pill below the grid. These are existing launcher options, not a new folder feature.
+
+- Hold OK on a Home tile and choose **Remove from Home** to hide its shortcut. The app stays installed.
+- Open **App library** to access installed launchable apps, including those removed from Home. Press OK to open an app.
+- Hold OK on an app in the library and choose **Add to Home** to restore its shortcut.
+
+Home visibility choices survive launcher restarts, theme changes and theme resets. The library is a single list, not a set of named folders. This configuration still needs a real-remote check on the TV after it is applied.
+
 ## Solid appearance
 
 Set `dock_glass` to `false`, `dock_opacity` to `100` and `glass_style` to `"rim"`, then reapply the theme.

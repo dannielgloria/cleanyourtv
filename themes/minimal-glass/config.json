@@ -34,5 +34,11 @@
     "night": [
       "03-night.jpg"
     ]
-  }
+  },
+  "app_library": true,
+  "library_button": true,
+  "show_library_pill": false,
+  "library_ok_opens": true,
+  "app_library_selection": false,
+  "tile_menu": true
 }
