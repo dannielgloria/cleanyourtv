@@ -43,5 +43,9 @@
   "tile_menu": true,
   "glass_header": true,
   "uniform_tiles": true,
-  "animations": true
+  "animations": true,
+  "home_idle_clock_minutes": 5,
+  "clock_wallpaper": true,
+  "clock_wallpaper_dim": 35,
+  "clock_glow": false
 }

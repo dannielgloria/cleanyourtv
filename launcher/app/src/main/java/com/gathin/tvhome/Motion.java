@@ -16,6 +16,17 @@ final class Motion {
     private Motion() {
     }
 
+    /** A short panel entrance; reduced motion fades only, and disabled animations are immediate. */
+    static void reveal(android.view.View view, boolean animations, boolean reducedMotion) {
+        view.animate().cancel();
+        view.setAlpha(animations ? 0f : 1f);
+        view.setTranslationY(animations && !reducedMotion
+                ? 12f * view.getResources().getDisplayMetrics().density : 0f);
+        if (animations) view.animate().alpha(1f).translationY(0f)
+                .setDuration(reducedMotion ? REDUCED_MS : 160)
+                .setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
+    }
+
     static void reduce(SpringAnimation spring) {
         spring.setSpring(new SpringForce().setStiffness(REDUCED_STIFFNESS).setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY));
         spring.setMinimumVisibleChange(REDUCED_MIN_CHANGE);

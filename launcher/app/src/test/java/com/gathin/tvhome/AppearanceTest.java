@@ -12,4 +12,10 @@ public class AppearanceTest {
         assertEquals(25, Appearance.dim(-1, 25));
         assertEquals(40, Appearance.dim(91, 40));
     }
+    @Test public void automaticPaletteUsesDaylightHours() {
+        assertEquals(false, Appearance.lightAtHour(6));
+        assertEquals(true, Appearance.lightAtHour(7));
+        assertEquals(true, Appearance.lightAtHour(18));
+        assertEquals(false, Appearance.lightAtHour(19));
+    }
 }

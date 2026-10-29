@@ -634,8 +634,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             public void onChildViewDetachedFromWindow(@NonNull View v) {
             }
         });
-        if (dockRow) grid.addItemDecoration(new DockDecoration(COLUMNS, density, cinematic, cfg.alwaysShowNames, cfg.dockOpacity, cfg.dockGlass, cfg.dockEvenPadding, cfg.dockBand,
-                singleRow, cfg.dockBandAll));
+        if (dockRow) {
+            DockDecoration dockDecoration = new DockDecoration(COLUMNS, density, cinematic, cfg.alwaysShowNames,
+                    cfg.dockOpacity, cfg.dockGlass, cfg.dockEvenPadding, cfg.dockBand, singleRow, cfg.dockBandAll);
+            if (cfg.glassHeader) dockDecoration.setRowGap(Math.round(DockDecoration.MINIMAL_ROW_GAP_DP * density));
+            grid.addItemDecoration(dockDecoration);
+        }
         if (cfg.fadeRows) TopFade.attach(grid, 48 * density);
         // Reduced motion: the tiles are simply there, with no entrance (reloadApps skips it there too).
         if (animations && !reducedMotion) {
@@ -656,10 +660,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             int h = b - t;
             // Item height follows the tile size, which follows the columns and the rows that must fit (AppAdapter.tileWidthPx).
             int inner = (r - l) - grid.getPaddingLeft() - grid.getPaddingRight();
-            int tileW = AppAdapter.tileWidthPx(inner, h, COLUMNS, rowsBelowDock, cfg.dockTitle, cfg.dockRow, density);
+            int sizingHeight = h - (cfg.glassHeader && dockRow && !singleRow
+                    ? Math.round(DockDecoration.MINIMAL_ROW_GAP_DP * density) : 0);
+            int tileW = AppAdapter.tileWidthPx(inner, sizingHeight, COLUMNS, rowsBelowDock, cfg.dockTitle, cfg.dockRow, density);
             int itemH = AppAdapter.itemHeightPx(AppAdapter.tileHeightPx(tileW), density);
             int dockRow = itemH + (int) (AppAdapter.DOCK_EXTRA_DP * density);   // item height plus DockDecoration offsets
             int gridRows = itemH * rowsBelowDock;
+            if (cfg.glassHeader && MainActivity.this.dockRow && !singleRow && rowsBelowDock > 0)
+                gridRows += Math.round(DockDecoration.MINIMAL_ROW_GAP_DP * density);
             // Keep the hero below the header when the library is enabled on a short screen,
             // even when the theme requests an extra visible row below the dock.
             int shelfClearance = cfg.appLibrary ? hero.getMeasuredHeight() + (int) (40 * density) : 0;
@@ -1295,6 +1303,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
+        if (idleClockMs > 0) {
+            if (hasFocus) restartIdleClock();
+            else root.removeCallbacks(showIdleClock);
+        }
         if (hasFocus) {
             startPendingSettingsReorder();
             if (libraryFocusPending && appLibrary == null) focusLibrary();
@@ -1685,12 +1697,22 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     @Override
     public void onLibraryRequested() {
+        showLibrary(null);
+    }
+
+    @Override
+    public void onOpenFolder(AppFolders.Folder folder) {
+        showLibrary(folder);
+    }
+
+    private void showLibrary(AppFolders.Folder folder) {
         if (appLibrary != null) appLibrary.close();
         if (openPopup != null) openPopup.dismiss();
         libraryFocusPending = false;
         libraryFromTopBar = false;
         libraryFromVpnPill = false;
-        appLibrary = new AppLibraryDialog(this, animations, reducedMotion, appLibrarySelection, libraryOkOpens, adapter::containsPackage, () -> reloadApps(false), () -> {
+        appLibrary = new AppLibraryDialog(this, animations, reducedMotion, folder == null && appLibrarySelection,
+                folder != null || libraryOkOpens, adapter::containsPackage, () -> reloadApps(false), () -> {
             appLibrary = null;
             openPopup = null;
             if (libraryFromTopBar) {
@@ -1705,11 +1727,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 btnVpn.requestFocus();
                 return;
             }
-            libraryFocusPending = true;
+            // Returning from the catalogue belongs on the app the person was using, not on the library button.
+            libraryFocusPending = false;
             grid.post(() -> {
-                if (libraryFocusPending && appLibrary == null && hasWindowFocus() && !isFinishing()) focusLibrary();
+                if (appLibrary == null && hasWindowFocus() && !isFinishing()) {
+                    int position = adapter.positionOf(lastFocusedKey);
+                    focusTile(position >= 0 ? position : lastFocused);
+                }
             });
         }, libraryExcludedApps);
+        appLibrary.setFolder(folder);
         openPopup = appLibrary.popup;
         appLibrary.show();
     }
@@ -3540,8 +3567,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (reordering) return;
         String key = adapter.keyAt(position);
         String pkg = adapter.packageAt(position);
+        AppFolders.Folder folder = adapter.folderAt(position);
         // Empty dock slots and the Default-home tile carry the launcher's own package: no menu for them.
-        if (key == null || pkg == null || pkg.equals(getPackageName())) return;
+        if (key == null || pkg == null || pkg.equals(getPackageName()) && folder == null) return;
         View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
         LinearLayout rows = panel.findViewById(R.id.rows);
         PopupWindow popup = glassPopup(panel, (int) (200 * density));
@@ -3558,12 +3586,21 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             pickUp(at);
             Toast.makeText(this, R.string.reorder_hint, Toast.LENGTH_LONG).show();
         });
-        if (appLibraryEnabled) addSettingsMenuRow(rows, popup, R.string.library_remove_shortcut, () -> {
+        if (glassHeader && folder != null) {
+            addSettingsMenuRow(rows, popup, R.string.folder_edit, () -> FolderEditor.edit(this,
+                    folder, null, adapter.folderCandidates(), () -> reloadApps(true)));
+            addSettingsMenuRow(rows, popup, R.string.folder_delete, () -> FolderEditor.remove(this,
+                    folder, () -> reloadApps(true)));
+        } else if (glassHeader && adapter.folderCandidates().stream().anyMatch(entry -> entry.pkg.equals(pkg))) {
+            addSettingsMenuRow(rows, popup, R.string.folder_create, () -> FolderEditor.edit(this,
+                    null, pkg, adapter.folderCandidates(), () -> reloadApps(true)));
+        }
+        if (folder == null && appLibraryEnabled) addSettingsMenuRow(rows, popup, R.string.library_remove_shortcut, () -> {
             if (LibraryApps.save(this, pkg, false)) reloadApps(false);
             else Toast.makeText(this, R.string.library_save_failed, Toast.LENGTH_LONG).show();
         });
         // Some firmware has no App info page at all; a row that only toasts "can't open" helps nobody.
-        Intent info = SystemSettings.appInfo(this, pkg);
+        Intent info = folder == null ? SystemSettings.appInfo(this, pkg) : null;
         if (info != null) addSettingsMenuRow(rows, popup, R.string.library_app_info, () -> open(info));
         panel.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
         popup.setWidth(Math.max((int) (200 * density), panel.getMeasuredWidth()));

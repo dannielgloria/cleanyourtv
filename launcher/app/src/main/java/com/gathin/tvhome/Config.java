@@ -656,6 +656,7 @@ final class Config {
         dockOpacity = chosenDockOpacity(choices.getInt(DOCK_OPACITY_KEY, -1), dockOpacity);
         if (glassHeader) {
             wallpaperDim = Appearance.dim(choices.getInt(Appearance.DIM, -1), wallpaperDim);
+            background = Appearance.background(ctx, background);
             int finish = choices.getInt(Appearance.FINISH, 0);
             if (finish == 1) { dockGlass = true; glassStyle = GLASS_HALO; }
             if (finish == 2) { dockGlass = false; glassStyle = GLASS_RIM; dockOpacity = 100; }
@@ -742,11 +743,11 @@ final class Config {
             SharedPreferences.Editor editor = choices.edit();
             if (!"absent".equals(token)) editor.remove("columns").remove("animations")
                     .remove("advanced_effects").remove(ROWS_BELOW_DOCK_KEY).remove(WALLPAPER_CHOICE_KEY)
-                    .remove(Appearance.FINISH).remove(Appearance.DIM).remove(DOCK_OPACITY_KEY);
+                    .remove(Appearance.FINISH).remove(Appearance.DIM).remove(Appearance.PALETTE).remove(DOCK_OPACITY_KEY);
             editor.putString(THEME_SIGNATURE_KEY, signature).commit();
         } else if (!seen.equals(signature)) {
             choices.edit().remove("columns").remove("animations").remove("advanced_effects")
-                    .remove(ROWS_BELOW_DOCK_KEY).remove(WALLPAPER_CHOICE_KEY).remove(Appearance.FINISH).remove(Appearance.DIM).remove(DOCK_OPACITY_KEY)
+                    .remove(ROWS_BELOW_DOCK_KEY).remove(WALLPAPER_CHOICE_KEY).remove(Appearance.FINISH).remove(Appearance.DIM).remove(Appearance.PALETTE).remove(DOCK_OPACITY_KEY)
                     .putString(THEME_SIGNATURE_KEY, signature).commit();
         }
     }

@@ -51,7 +51,13 @@
   "tile_menu": true,
   "stock_home_redirect": "com.google.android.apps.tv.launcherx",
   "key_filter": true,
+  "consume_volume_keys": true,
+  "power_on_home_always": true,
   "glass_header": true,
   "uniform_tiles": true,
-  "animations": true
+  "animations": true,
+  "home_idle_clock_minutes": 5,
+  "clock_wallpaper": true,
+  "clock_wallpaper_dim": 35,
+  "clock_glow": false
 }

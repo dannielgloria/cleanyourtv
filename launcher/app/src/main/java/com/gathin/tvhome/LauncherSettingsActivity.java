@@ -46,9 +46,15 @@ public final class LauncherSettingsActivity extends Activity {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
-        setContentView(R.layout.activity_launcher_settings);
-        choices = getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE);
         Config config = Config.load(this);
+        if (config.glassHeader) setTheme(Appearance.light(this)
+                ? R.style.Theme_TvHome_MinimalLight : R.style.Theme_TvHome_MinimalGlass);
+        setContentView(R.layout.activity_launcher_settings);
+        if (config.glassHeader) {
+            View content = ((android.view.ViewGroup) findViewById(android.R.id.content)).getChildAt(0);
+            Motion.reveal(content, config.animations, config.reducedMotion);
+        }
+        choices = getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE);
         View reorderChoice = findViewById(R.id.reorderChoice);
         reorderChoice.setVisibility(config.launcherSettingsButton ? View.VISIBLE : View.GONE);
         reorderChoice.setOnClickListener(v -> {
@@ -142,7 +148,8 @@ public final class LauncherSettingsActivity extends Activity {
             if (!hasOnTvChoices()) return;
             choices.edit().remove("columns").remove(Config.ROWS_BELOW_DOCK_KEY).remove("animations")
                     .remove("advanced_effects").remove(Config.WALLPAPER_CHOICE_KEY)
-                    .remove(Appearance.FINISH).remove(Appearance.DIM).remove(Config.DOCK_OPACITY_KEY).remove(OpenOnStart.KEY).commit();
+                    .remove(Appearance.FINISH).remove(Appearance.DIM).remove(Appearance.PALETTE)
+                    .remove(Config.DOCK_OPACITY_KEY).remove(OpenOnStart.KEY).commit();
             Config current = Config.load(this);
             columns = current.columns;
             rowsBelowDock = current.rowsBelowDock;
@@ -170,6 +177,11 @@ public final class LauncherSettingsActivity extends Activity {
                 getString(R.string.wallpaper_theme_default), getString(R.string.appearance_glass),
                 getString(R.string.appearance_solid)}, choices.getInt(Appearance.FINISH, 0),
                 value -> { choices.edit().putInt(Appearance.FINISH, value).apply(); recreate(); });
+        addAppearanceRow(rows, R.string.appearance_palette, new String[] {
+                getString(R.string.wallpaper_theme_default), getString(R.string.appearance_dark),
+                getString(R.string.appearance_light), getString(R.string.appearance_auto)},
+                choices.getInt(Appearance.PALETTE, 0),
+                value -> { choices.edit().putInt(Appearance.PALETTE, value).apply(); recreate(); });
         int[] dims = {0, 15, 25, 40, 60, 90};
         String[] labels = new String[dims.length + 1];
         labels[0] = getString(R.string.wallpaper_theme_default);
@@ -181,6 +193,18 @@ public final class LauncherSettingsActivity extends Activity {
         addAppearanceRow(rows, R.string.appearance_dim, labels, selected, value -> {
             if (value == 0) choices.edit().remove(Appearance.DIM).apply();
             else choices.edit().putInt(Appearance.DIM, dims[value - 1]).apply();
+            recreate();
+        });
+        TextView restore = new TextView(this, null, 0, R.style.SettingsRow);
+        restore.setText(R.string.appearance_restore);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1,
+                Math.round(52 * getResources().getDisplayMetrics().density));
+        lp.topMargin = Math.round(10 * getResources().getDisplayMetrics().density);
+        rows.addView(restore, rows.indexOfChild(findViewById(R.id.wallpaperChoice)), lp);
+        restore.setOnClickListener(v -> {
+            choices.edit().remove(Appearance.FINISH).remove(Appearance.DIM)
+                    .remove(Appearance.PALETTE).apply();
+            changed();
             recreate();
         });
     }

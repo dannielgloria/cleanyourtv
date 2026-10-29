@@ -172,7 +172,8 @@ final class AppLibraryDialog {
         panel.setPadding(dp(12), dp(8), dp(12), dp(12));
         panel.setBackgroundResource(R.drawable.glass_panel);
         if (minimal) panel.setBackground(surface(((Appearance.solid(activity) ? 255
-                : Math.max(190, appearance.dockOpacity * 255 / 100)) << 24) | 0x00101824, 24));
+                : Math.max(242, appearance.dockOpacity * 255 / 100)) << 24)
+                | (Appearance.panel(activity) & 0x00FFFFFF), 24));
         View decor = activity.getWindow().getDecorView();
         catalogWidth = Math.min(dp(800), Math.max(dp(200), decor.getWidth() - dp(64)));
         int width = catalogWidth;
@@ -204,17 +205,25 @@ final class AppLibraryDialog {
         load(true);
     }
 
+    private AppFolders.Folder folder;
+
+    void setFolder(AppFolders.Folder folder) { this.folder = folder; }
+
     private void reveal() {
         popup.showAtLocation(activity.getWindow().getDecorView(), Gravity.CENTER, 0, 0);
         View container = panel.getRootView();
         if (container.getLayoutParams() instanceof WindowManager.LayoutParams) {
             WindowManager.LayoutParams params = (WindowManager.LayoutParams) container.getLayoutParams();
             params.flags |= WindowManager.LayoutParams.FLAG_DIM_BEHIND;
-            params.dimAmount = 0.55f;
+            params.dimAmount = minimal ? 0.72f : 0.55f;
             activity.getWindowManager().updateViewLayout(container, params);
         }
-        panel.setAlpha(0f);
-        panel.animate().alpha(1f).setDuration(reducedMotion ? Motion.REDUCED_MS : 180).start();
+        if (minimal) {
+            Motion.reveal(panel, animations, reducedMotion);
+        } else {
+            panel.setAlpha(animations ? 0f : 1f);
+            if (animations) panel.animate().alpha(1f).setDuration(reducedMotion ? Motion.REDUCED_MS : 180).start();
+        }
     }
 
     /** Called by the activity's existing package receiver; an uninstall cannot leave a stale action. */
@@ -234,6 +243,8 @@ final class AppLibraryDialog {
         int load = loads.start(reveal);
         PackageManager pm = activity.getPackageManager();
         String self = activity.getPackageName();
+        Set<String> folderMembers = folder == null ? null : new HashSet<>();
+        if (folderMembers != null) for (String pkg : folder.packages) if (onHome.test(pkg)) folderMembers.add(pkg);
         LOADER.execute(() -> {
             Map<String, ResolveInfo> unique = new LinkedHashMap<>();
             Set<String> tv = new HashSet<>();
@@ -243,7 +254,9 @@ final class AppLibraryDialog {
                     if (info.activityInfo == null || !info.activityInfo.exported) continue;
                     String pkg = info.activityInfo.packageName;
                     if (Intent.CATEGORY_LEANBACK_LAUNCHER.equals(category)) tv.add(pkg);
-                    if (!pkg.equals(self) && !LibraryApps.excludedFromCatalog(excludedApps, pkg) && !unique.containsKey(pkg)) unique.put(pkg, info);
+                    if (!pkg.equals(self) && !LibraryApps.excludedFromCatalog(excludedApps, pkg)
+                            && (folderMembers == null || folderMembers.contains(pkg))
+                            && !unique.containsKey(pkg)) unique.put(pkg, info);
                 }
             }
             Map<String, String> names = new HashMap<>();
@@ -365,7 +378,7 @@ final class AppLibraryDialog {
         header.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         header.setGravity(Gravity.CENTER_VERTICAL);
         header.setPadding(dp(12), dp(4), dp(8), dp(4));
-        TextView title = text(activity.getString(R.string.app_library), 22, Color.WHITE);
+        TextView title = text(folder == null ? activity.getString(R.string.app_library) : folder.name, 22, Color.WHITE);
         header.addView(title, new LinearLayout.LayoutParams(0, dp(36), 1));
         title.setGravity(Gravity.CENTER_VERTICAL | (rtl ? Gravity.RIGHT : Gravity.LEFT));
         title.setSingleLine(true);
@@ -382,7 +395,9 @@ final class AppLibraryDialog {
         }
         if (minimal) {
             homeButton = headerButton(R.drawable.ic_header_home, R.string.app_name, this::close);
-            header.addView(homeButton, new LinearLayout.LayoutParams(dp(42), dp(42)));
+            LinearLayout.LayoutParams homeParams = new LinearLayout.LayoutParams(dp(42), dp(42));
+            homeParams.setMarginStart(dp(16));
+            header.addView(homeButton, homeParams);
             TextView settings = headerButton(R.drawable.ic_header_settings, R.string.launcher_settings, () -> {
                 close();
                 activity.startActivity(new Intent(activity, LauncherSettingsActivity.class));
@@ -671,14 +686,14 @@ final class AppLibraryDialog {
             icon.setId(R.id.icon);
             icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
             content.addView(icon, new LinearLayout.LayoutParams(dp(60), dp(60)));
-            TextView name = text("", 15, Color.WHITE);
+            TextView name = text("", 15, minimal ? Appearance.text(activity) : Color.WHITE);
             name.setId(R.id.title);
             name.setGravity(Gravity.CENTER);
             name.setMaxLines(2);
             LinearLayout.LayoutParams nameParams = new LinearLayout.LayoutParams(-1, dp(44));
             nameParams.topMargin = dp(10);
             content.addView(name, nameParams);
-            TextView status = text("", 11, 0xBBFFFFFF);
+            TextView status = text("", 11, minimal && Appearance.light(activity) ? 0xBB132033 : 0xBBFFFFFF);
             status.setId(R.id.status);
             status.setGravity(Gravity.CENTER);
             status.setMaxLines(2);

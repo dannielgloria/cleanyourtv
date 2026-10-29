@@ -152,4 +152,15 @@
     <string name="appearance_glass">Glass</string>
     <string name="appearance_solid">Solid</string>
     <string name="appearance_dim">Wallpaper dimming</string>
+    <string name="appearance_palette">מצב צבע</string>
+    <string name="appearance_dark">כהה</string>
+    <string name="appearance_light">בהיר</string>
+    <string name="appearance_auto">אוטומטי</string>
+    <string name="appearance_restore">שחזור מראה העיצוב</string>
+    <string name="folder_create">יצירת תיקייה</string>
+    <string name="folder_edit">עריכת תיקייה</string>
+    <string name="folder_delete">מחיקת תיקייה</string>
+    <string name="folder_name">שם התיקייה (1–40 תווים)</string>
+    <string name="folder_choose_apps">יש לבחור בין אפליקציה אחת ל־64 אפליקציות.</string>
+    <string name="folder_delete_hint">האפליקציות יחזרו למסך הבית כקיצורי דרך נפרדים.</string>
 </resources>

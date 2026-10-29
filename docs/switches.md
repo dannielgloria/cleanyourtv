@@ -26,6 +26,7 @@ fits the rules; keys from before the rule sit on its wanted list until a screens
 |---|---|
 | `columns` | <img src="../themes/six-columns/screenshot.jpg" width="320" alt="columns on a TV"> |
 | `glass_style` | <img src="switches/glass_style.jpg" width="320" alt="glass_style halo on a TV"> |
+| `glass_header` | <img src="switches/glass_header.jpg" width="320" alt="glass_header on a TV: thin white icons in circular glass controls"> |
 | `sky_intensity` | <img src="sky-sunset.jpg" width="320" alt="sky_intensity on a TV"> |
 | `wallpaper_rotation_minutes` | <img src="../themes/scenes/screenshot.jpg" width="320" alt="wallpaper_rotation_minutes on a TV"> |
 | `festival` | <img src="../themes/dussehra/screenshot.jpg" width="320" alt="festival on a TV"> |
@@ -60,7 +61,3 @@ fits the rules; keys from before the rule sit on its wanted list until a screens
 | `inputs_connected_only` | <img src="switches/inputs_connected_only.jpg" width="320" alt="inputs_connected_only on a TV"> |
 | `icon_tiles` | <img src="switches/icon_tiles.jpg" width="320" alt="icon_tiles: an app drawn from its icon in the grid on a TV"> |
 | `game_day` | <img src="switches/game_day.jpg" width="320" alt="game_day: Minnesota Vikings at Detroit Lions, Kickoff in 5d 13h, with four dots, under the clock on a TV"> |
-
-## Pending device capture
-
-`glass_header` is a draft option for thin header icons, translucent controls, a library grid and local appearance settings. Its real-TV screenshot and Screenshots table row are pending; the screenshot validation intentionally remains incomplete until that capture exists. Do not use a generated mockup as the device capture.

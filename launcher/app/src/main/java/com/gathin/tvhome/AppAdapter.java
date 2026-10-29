@@ -63,6 +63,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         void onLibraryUp();
         /** A tile whose launch_actions entry is "input:<id>": switch to that TV input instead of opening an app. */
         void onOpenInput(String inputId);
+        void onOpenFolder(AppFolders.Folder folder);
     }
 
     static final class Entry {
@@ -74,6 +75,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         final String pkg;
         final Drawable banner;
         final Drawable icon;
+        AppFolders.Folder folder;
         /** Text under the tile when it is focused in the grid: the label, plus the caption for a card. */
         final String name;
         /** Ambient glow colour; 0 until sampled from the banner, or the card's accent from the start. */
@@ -216,11 +218,14 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final boolean tileMenu;
     /** Tile names and bundled banners that replace the app's own (config.xml, app_labels and app_banners). */
     private final Map<String, String> appLabels, appBanners;
-    /** Every app tile is its icon on a card tinted from that icon, never its banner (config.xml, uniform_tiles). */
+    /** Uniform cards use tinted icons, except Minimal Glass prefers horizontal TV artwork. */
     private final boolean uniformTiles;
+    /** Minimal Glass prefers TV banners and fits fallback icons without cropping. */
+    private final boolean minimalGlass;
     /** Packages drawn from their icon and name even when they have a banner (config.xml icon_tiles). */
     private final Set<String> iconTiles;
     private final List<Entry> items = new ArrayList<>();
+    private final List<Entry> folderCandidates = new ArrayList<>();
 
     AppAdapter(Context ctx, TileListener listener, int dockSize, Config cfg) {
         this.ctx = ctx;
@@ -248,6 +253,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         this.appLabels = cfg.appLabels;
         this.appBanners = cfg.appBanners;
         this.uniformTiles = cfg.uniformTiles;
+        this.minimalGlass = cfg.glassHeader;
         // Tiles keep their identity across reload(), so a focused tile stays on its app instead of
         // its view being rebound to whatever app now sits in that slot.
         setHasStableIds(true);
@@ -297,8 +303,9 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     appLabels.containsKey(pkg) ? appLabels.get(pkg) : String.valueOf(ri.loadLabel(pm)), pkg);
             if (!seen.add(pkg + '\n' + label)) continue;
             Drawable banner = null;
-            // uniform_tiles draws the icon, so an app's banner is never loaded. A module card keeps its banner.
-            if (!(uniformTiles && card == null)) {
+            // Minimal Glass prefers TV artwork so square launcher icons need not be cropped into cards.
+            // Other uniform themes retain their icon-only layout. Module cards keep their artwork.
+            if (!uniformTiles || minimalGlass || card != null) {
                 banner = bundledBanner(appBanners.get(pkg));
                 if (banner == null) banner = iconTiles.contains(pkg) ? iconBanner(ri.loadIcon(pm)) : loadBanner(pm, ri);
             }
@@ -309,6 +316,26 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 fresh.add(new Entry(Entry.CARD, label, component, banner, icon, card.caption, card.accent));
             } else {
                 fresh.add(new Entry(label, component, banner, icon));
+            }
+        }
+        folderCandidates.clear();
+        if (minimalGlass) {
+            for (Entry entry : fresh) if (entry.kind == Entry.APP) folderCandidates.add(entry);
+            for (AppFolders.Folder folder : AppFolders.load(ctx)) {
+                List<Drawable> artwork = new ArrayList<>();
+                for (String pkg : folder.packages) {
+                    for (Entry entry : folderCandidates) if (entry.pkg.equals(pkg)) {
+                        artwork.add(entry.banner != null ? entry.banner : entry.icon);
+                        break;
+                    }
+                }
+                if (artwork.isEmpty()) continue;
+                fresh.removeIf(entry -> entry.kind == Entry.APP && folder.packages.contains(entry.pkg));
+                Entry cover = new Entry(folder.name, new ComponentName(ctx.getPackageName(),
+                        ctx.getPackageName() + ".folder." + folder.id),
+                        new FolderArtwork(artwork, Appearance.panel(ctx)), null);
+                cover.folder = folder;
+                fresh.add(cover);
             }
         }
         Collections.sort(fresh, (a, b) -> {
@@ -392,6 +419,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     /** Lets go of every tile and its artwork (Home is in the background and memory is short). */
     void clear() {
         items.clear();
+        folderCandidates.clear();
         notifyDataSetChanged();
     }
 
@@ -415,7 +443,9 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         float density = parent.getResources().getDisplayMetrics().density;
         int width = parent.getWidth() > 0 ? parent.getWidth() : parent.getMeasuredWidth();
         int inner = width - parent.getPaddingLeft() - parent.getPaddingRight();
-        int w = tileWidthPx(inner, parent.getHeight(), dockSize, rowsBelowDock, dockTitle, dockRow, density), h = tileHeightPx(w);
+        int sizingHeight = parent.getHeight() - (minimalGlass && dockRow && !singleRow
+                ? Math.round(DockDecoration.MINIMAL_ROW_GAP_DP * density) : 0);
+        int w = tileWidthPx(inner, sizingHeight, dockSize, rowsBelowDock, dockTitle, dockRow, density), h = tileHeightPx(w);
         View card = v.findViewById(R.id.card);
         ViewGroup.LayoutParams cardLp = card.getLayoutParams();
         cardLp.width = w;
@@ -435,10 +465,16 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         // A sideways row would stretch a match_parent item across the whole screen: give it a grid column's width.
         if (singleRow) v.getLayoutParams().width = inner / dockSize;
         if (uniformTiles) {
-            // tvOS-style tile: a large centred mark, no caption inside the card.
+            // Keep the entire fallback icon visible: square icons are not horizontal TV artwork.
             View icon = v.findViewById(R.id.icon);
             FrameLayout.LayoutParams iconLp = (FrameLayout.LayoutParams) icon.getLayoutParams();
-            iconLp.width = iconLp.height = Math.round(h * ICON_SHARE);
+            if (minimalGlass) {
+                iconLp.width = Math.round(w * 0.84f);
+                iconLp.height = Math.round(h * 0.84f);
+                ((ImageView) icon).setScaleType(ImageView.ScaleType.FIT_CENTER);
+            } else {
+                iconLp.width = iconLp.height = Math.round(h * ICON_SHARE);
+            }
             iconLp.bottomMargin = 0;
             icon.setLayoutParams(iconLp);
         } else if (h < Math.round(DESIGN_H_DP * density)) {
@@ -474,6 +510,10 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         h.card.setVisibility(View.VISIBLE);
         h.card.setFocusable(true);
         h.name.setText(e.name);
+        if (Appearance.light(ctx)) {
+            h.name.setTextColor(0xFF132033);
+            h.label.setTextColor(0xFF132033);
+        }
         // The dock has no labels, unless always_show_names asks for them (DockDecoration then makes room in the band).
         // In a single row every tile is the dock's kind: the big title above names it.
         boolean dockKind = dockRow && (singleRow || position < dockSize);
@@ -491,8 +531,12 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         // nothing on every frame; keep it under banners with transparent parts and under icon tiles.
         h.card.setBackground(e.banner != null && e.banner.getOpacity() == PixelFormat.OPAQUE ? null : h.cardBackground);
         if (uniformTiles && e.banner == null) {
-            if (e.backdrop == null) e.backdrop = backdrop(e.icon, ambientColorAt(position));
-            h.card.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, e.backdrop));
+            if (Appearance.light(ctx)) {
+                h.card.setBackground(new android.graphics.drawable.ColorDrawable(0xFFF8FAFC));
+            } else {
+                if (e.backdrop == null) e.backdrop = backdrop(e.icon, ambientColorAt(position));
+                h.card.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, e.backdrop));
+            }
         }
         if (e.banner != null) {
             h.banner.setImageDrawable(e.banner);
@@ -526,6 +570,10 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     /** Opens the tile's activity by explicit component, with no extras: a card can name nothing else. */
     private void launch(Entry e) {
+        if (e.folder != null) {
+            listener.onOpenFolder(e.folder);
+            return;
+        }
         if (e.kind == Entry.HOME_SETTINGS) {
             ctx.startActivity(new Intent(ctx, HomeSettingsActivity.class)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
@@ -572,8 +620,19 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     @Override public int getItemViewType(int position) { return isLibraryAt(position) ? 1 : 0; }
 
     boolean containsPackage(String pkg) {
-        for (Entry entry : items) if (entry.pkg.equals(pkg)) return true;
+        for (Entry entry : items) {
+            if (entry.pkg.equals(pkg)) return true;
+            if (entry.folder != null && entry.folder.packages.contains(pkg)) {
+                for (Entry candidate : folderCandidates) if (candidate.pkg.equals(pkg)) return true;
+            }
+        }
         return false;
+    }
+
+    List<Entry> folderCandidates() { return new ArrayList<>(folderCandidates); }
+
+    AppFolders.Folder folderAt(int position) {
+        return position >= 0 && position < items.size() ? items.get(position).folder : null;
     }
 
     @Override

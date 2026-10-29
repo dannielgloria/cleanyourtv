@@ -12,6 +12,7 @@ Tested on one TV reporting **TCL G10, Android TV 12, SDK 31, firmware STT2.23020
 - `live_tv_package: "com.tcl.tv"` for this TV's tuner and input integration.
 - The app library, its top-bar button, OK-to-open behavior and the tile menu for Home visibility.
 - `stock_home_redirect: "com.google.android.apps.tv.launcherx"` and `key_filter: true` for the optional Home button accessibility service.
+- `power_on_home_always: true` opens Home after power-on, once the accessibility service is available. `consume_volume_keys: true` supplies held-volume repeat while key filtering is enabled.
 
 The generic [config.json](config.json) does not include TCL Home redirection. The profile does not disable Google TV, setupwraith, Alexa, casting, firmware updates or streaming apps.
 
@@ -44,7 +45,7 @@ In the TV's system **Accessibility** settings, enable **Home button** (Spanish: 
 
 Verify Home from an app, held Volume Up/Down, the streaming-app buttons, Inputs, Settings, standby/wake and a full reboot. Do not treat an injected Home key as proof of the physical remote.
 
-With `key_filter: false`, the helper stayed bound after reboot but the owner reported that physical Home remained on Google TV. With `key_filter: true`, physical Home and held-volume repeat worked before the second reboot. After that reboot the service and configuration persisted and injected Home returned to CleanYourTV. The owner subsequently confirmed that standby/off-on displayed CleanYourTV. A full reboot still initially displayed Google TV; automatic launch immediately after a cold boot is not guaranteed.
+With `key_filter: false`, physical Home remained on Google TV. The final configuration uses `stock_home_redirect`, `key_filter: true`, `consume_volume_keys: true` and `power_on_home_always: true`, with the Home button service enabled. The owner confirmed physical Home and off/on operation. Google TV remains enabled and retains the system HOME role; the helper opens CleanYourTV over it. Behavior after disconnecting mains power has not been separately verified with this final configuration and may differ across firmware.
 
 Key filtering affects held-volume repeat on some other TCL firmware. If that or another remote function regresses, disable the helper and restore the recorded configuration. Echo services were retained, but explicit voice commands were not verified in this session.
 
@@ -71,4 +72,4 @@ After verification, turn off USB and network/wireless debugging, revoke debuggin
 python3 tools/adb-closed.py '<tv ip>'
 ```
 
-The completed session returned **connection refused**, confirming that ADB was closed. The theme and accessibility helper work without keeping debugging enabled.
+An earlier session returned **connection refused** after debugging was disabled. Later development required enabling debugging again; disconnecting the development client alone does not close the TV's port. Follow the steps above and verify closure after testing. The theme and accessibility helper work without keeping debugging enabled.

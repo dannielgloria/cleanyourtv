@@ -337,7 +337,11 @@ class SetThemeFolderTest(unittest.TestCase):
         # PROJECT_FOLDERS, or set would rewrite it the way examples/ used to be rewritable.
         shipped = {}
         for path in sorted(ROOT.glob("*/*/config.json")):
-            shipped.setdefault(path.relative_to(ROOT).parts[0], set()).add(path)
+            top = path.relative_to(ROOT).parts[0]
+            # Per AGENTS.md these are private, ignored TV backups and working notes, not shipped sets.
+            if top in {"backup", "work"}:
+                continue
+            shipped.setdefault(top, set()).add(path)
         self.assertGreaterEqual(sum(len(v) for v in shipped.values()), 60, "no config.json files were found")
         self.assertEqual({"examples", "themes"}, set(shipped), "a folder with a config.json that set does not guard")
         self.assertEqual(set(shipped), set(manage.PROJECT_FOLDERS))
