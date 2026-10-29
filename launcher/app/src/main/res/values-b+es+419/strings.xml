@@ -149,8 +149,6 @@
     <string name="appearance_glass">Cristal</string>
     <string name="appearance_solid">Sólido</string>
     <string name="appearance_dim">Oscurecimiento del fondo</string>
-    <string name="more_inputs">Más entradas</string>
-    <string name="power_menu">Reiniciar / apagar</string>
     <string name="game_live">En vivo</string>
     <string name="folder_create">Crear carpeta</string>
     <string name="folder_edit">Editar carpeta</string>
