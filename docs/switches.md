@@ -50,3 +50,7 @@ fits the rules; keys from before the rule sit on its wanted list until a screens
 | `library_ok_opens` | <img src="switches/library_ok_opens.jpg" width="320" alt="library_ok_opens on a TV"> |
 | `date_below_clock` | <img src="switches/date_below_clock.jpg" width="320" alt="date_below_clock on a TV"> |
 | `power_on_home` | <img src="switches/power_on_home.jpg" width="320" alt="power_on_home on a TV"> |
+
+## Pending device capture
+
+`glass_header` is a draft option for thin header icons, translucent controls, a library grid and local appearance settings. Its real-TV screenshot and Screenshots table row are pending; the screenshot validation intentionally remains incomplete until that capture exists. Do not use a generated mockup as the device capture.

@@ -109,4 +109,8 @@
     <string name="race_live">%1$s · käynnissä</string>
     <string name="race_finished">Ruutulippu</string>
     <string name="last_opened">Viimeksi avattu %1$s</string>
+    <string name="appearance_finish">Appearance</string>
+    <string name="appearance_glass">Glass</string>
+    <string name="appearance_solid">Solid</string>
+    <string name="appearance_dim">Wallpaper dimming</string>
 </resources>

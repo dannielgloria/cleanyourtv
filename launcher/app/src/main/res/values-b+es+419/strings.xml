@@ -143,4 +143,8 @@
     <string name="race_countdown_hours">%1$dh %2$dm</string>
     <string name="race_countdown_days">%1$dd %2$dh</string>
     <string name="last_opened">Última apertura: %1$s</string>
+    <string name="appearance_finish">Apariencia</string>
+    <string name="appearance_glass">Cristal</string>
+    <string name="appearance_solid">Sólido</string>
+    <string name="appearance_dim">Oscurecimiento del fondo</string>
 </resources>

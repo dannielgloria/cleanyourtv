@@ -717,6 +717,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         });
         btnLibraryTop.setVisibility(cfg.libraryButton && cfg.appLibrary ? View.VISIBLE : View.GONE);
         addTopBarApps(cfg.topBarApps);
+        glassHeader = cfg.glassHeader && !festive;   // festive artwork keeps its own icons and tint
         iconOnlyButtons = cfg.iconOnlyButtons;
         topMenu = cfg.topMenu;
         wifiIconOnly = iconOnlyButtons && cfg.wifiLabelWidth <= 0;
@@ -752,6 +753,21 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             makeIconOnly((TextView) btnSettings);
         }
         if (cfg.iconOnlyInputs) makeIconOnly((TextView) btnInputs);
+        if (glassHeader) {
+            HeaderGlass.apply((TextView) btnInputs, R.drawable.ic_header_inputs);
+            HeaderGlass.apply(btnWifi, R.drawable.ic_header_wifi);
+            HeaderGlass.apply((TextView) btnLibraryTop, R.drawable.ic_header_library);
+            HeaderGlass.apply((TextView) btnSettings, cfg.launcherSettingsButton && !cfg.topMenu
+                    ? R.drawable.ic_header_home : R.drawable.ic_header_settings);
+            if (wifiOnlineTint != null) {
+                wifiPlainTint = ColorStateList.valueOf(Color.WHITE);
+                wifiOnlineTint = HeaderGlass.focusWhite(wifiOnlineTint);
+                if (wifiNoInternetTint != null) {
+                    wifiNoInternetTint = HeaderGlass.focusWhite(wifiNoInternetTint);
+                    wifiOfflineTint = HeaderGlass.focusWhite(wifiOfflineTint);
+                }
+            }
+        }
         btnSettings.setOnLongClickListener(v -> {
             showSettingsMenu();
             return true;
@@ -2644,7 +2660,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         } else {
             if (icon != wifiIcon) {
                 wifiIcon = icon;
-                btnWifi.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, 0, 0, 0);
+                int artwork = !glassHeader ? icon : icon == R.drawable.ic_ethernet
+                        ? R.drawable.ic_header_ethernet : R.drawable.ic_header_wifi;
+                btnWifi.setCompoundDrawablesRelativeWithIntrinsicBounds(artwork, 0, 0, 0);
             }
             ColorStateList tint = online ? wifiOnlineTint : wifiPlainTint;
             // wifi_status_warnings: orange while connected but not validated (a captive portal), red while offline.
@@ -2657,6 +2675,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     /** config.xml icon_only_buttons. */
     private boolean iconOnlyButtons;
+    /** Opt-in thin icons and reflective header surfaces (glass_header). */
+    private boolean glassHeader;
     /** config.xml top_menu: Inputs, Wi-Fi and Settings folded into one gear. */
     private boolean topMenu;
     /** show_inputs_pill as configured: top_menu clears showInputsPill, so its Inputs row reads this. */

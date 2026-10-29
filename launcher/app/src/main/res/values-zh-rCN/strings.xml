@@ -144,4 +144,8 @@
     <string name="tile_add_to_dock">添加到程序坞</string>
     <string name="tile_move">移动</string>
     <string name="tile_replace_in_dock">替换为其他应用</string>
+    <string name="appearance_finish">Appearance</string>
+    <string name="appearance_glass">Glass</string>
+    <string name="appearance_solid">Solid</string>
+    <string name="appearance_dim">Wallpaper dimming</string>
 </resources>
