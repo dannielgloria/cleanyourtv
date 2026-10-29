@@ -124,6 +124,10 @@ final class ClockScene {
             }
             return;
         }
+        if (cfg.glassHeader) {
+            ((android.widget.TextView) content.findViewById(R.id.dreamTime)).setTextSize(64);
+            ((android.widget.TextView) content.findViewById(R.id.dreamDate)).setTextSize(14);
+        }
         // What Home plays, and Config puts the single wallpaper in it when a theme has no collection.
         // Reading cfg.wallpaper first held the screensaver on wallpaper.jpg while Home rotated.
         if (cfg.wallpapers.isEmpty()) {

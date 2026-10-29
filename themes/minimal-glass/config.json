@@ -7,7 +7,7 @@
   "dock_band": true,
   "dock_even_padding": true,
   "dock_opacity": 50,
-  "glass_style": "glass",
+  "glass_style": "halo",
   "cinematic_home": false,
   "ambient_glow": false,
   "app_glow": false,
@@ -40,5 +40,12 @@
   "show_library_pill": false,
   "library_ok_opens": true,
   "app_library_selection": false,
-  "tile_menu": true
+  "tile_menu": true,
+  "glass_header": true,
+  "uniform_tiles": true,
+  "animations": true,
+  "home_idle_clock_minutes": 5,
+  "clock_wallpaper": true,
+  "clock_wallpaper_dim": 35,
+  "clock_glow": false
 }

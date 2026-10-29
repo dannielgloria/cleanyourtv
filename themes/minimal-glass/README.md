@@ -1,22 +1,64 @@
-# Minimal Glass (draft)
+# Minimal Glass
 
-Minimal home screen with five columns, a translucent dock, a restrained glass focus highlight and reduced motion. Wallpaper follows morning, afternoon and night, with a 25% dark overlay for white text. The base configuration preserves configured apps and their order and does not configure remote helpers. The optional [TCL G10 profile](TCL-G10.md) adds the tested dock, TCL Live TV package and Home redirection using existing launcher options.
+A minimal Home screen with five columns, original app artwork, rounded cards, a translucent dock and restrained focus highlights. Morning, afternoon and night wallpapers follow the TV's local time. The base theme leaves the TV's Home selection and remote helpers unchanged; the optional [TCL G10 profile](TCL-G10.md) adds reversible Home redirection.
 
-From the repository root, with the launcher already installed and ADB authorized:
+![Minimal Glass on a real TV](screenshot.jpg)
 
-```bash
-TV_HOST=<tv-ip> tools/theme.sh themes/minimal-glass
-```
+## Apply or reset
 
-Replace `<tv-ip>` with the TV address. Applying a theme clears local layout and motion overrides. To return to the built-in appearance (not a backup of a previous theme):
+Build the launcher from this fork before applying the theme; older builds do not implement its glass header, folders or appearance controls. With ADB authorized:
 
 ```bash
-TV_HOST=<tv-ip> tools/theme.sh --reset
+TV_HOST='<tv ip>' tools/theme.sh themes/minimal-glass
 ```
 
-## Wallpaper schedule
+Applying a theme clears local layout, motion and appearance overrides. It preserves owner-created folders, Home shortcut choices and saved ordering. Reset the theme to the built-in appearance with:
 
-Without latitude and longitude configured in the launcher:
+```bash
+TV_HOST='<tv ip>' tools/theme.sh --reset
+```
+
+This resets appearance, not accessibility services or startup permissions. Use the [TCL rollback guide](TCL-G10.md) to restore Google TV.
+
+## Artwork, spacing and focus
+
+- Equally sized rounded cards prefer the app's horizontal TV banner, including configured artwork overrides. If no suitable banner exists, the full original icon fits within 84% of the card without stretching or cropping. An embedded square icon background is preserved.
+- The dock has an extra 16dp before the first row below it. Layouts configured to fit additional rows reserve this space when calculating card sizes.
+- Focus enlarges the card by 10%, with a restrained halo and no bounce. Original app logos remain unchanged.
+- Circular header buttons use thin white vector icons and layered translucent fills. The network icon distinguishes Ethernet from Wi-Fi. Accessible descriptions and existing navigation remain available.
+
+These enhancements are enabled by `glass_header: true`. Other themes using `uniform_tiles` retain their icon-only presentation. The launcher uses no blur, network access or new dependencies.
+
+## Library and appearance
+
+The App library opens from the top bar into a vertical grid. Its dark panel is at least 95% opaque and dims Home so the clock and app titles do not compete with the grid. Home and Settings use the same circular controls. In Spanish the count reads “N apps”, with extra space before Home.
+
+Hold OK on an app to show its existing actions. Removing a shortcut from Home leaves the app installed and available in the library; Add to Home restores it.
+
+Launcher settings provides:
+
+| Choice | Behavior |
+|---|---|
+| Appearance | Theme default, Glass or Solid |
+| Color mode | Theme default, Dark, Light or Automatic |
+| Wallpaper dimming | Preview theme default or 0–90% dimming |
+| Restore theme appearance | Remove local finish, palette and dimming overrides |
+
+Automatic uses a light palette from 07:00 to 19:00 and dark otherwise. The existing dock opacity controls also affect the library, subject to its readability minimum. Solid uses opaque panels, a rim focus and disables the opacity controls until Glass or theme default is restored.
+
+Selections preview immediately in settings. Closing the library or returning from settings restores the last Home selection when it remains available. Dialogs use matching light/dark surfaces and keep native Android selection, cancellation and accessibility behavior.
+
+Library and settings entrances last 160ms, with a small upward movement. Reduced motion uses only a 90ms fade; disabling animations makes entry immediate.
+
+## Folders with mosaic covers
+
+Hold OK on a Home app, choose **Create folder**, enter a name, select the apps and confirm. The cover shows up to four original app images. Press OK to open the folder. Hold OK on it to edit its name or membership, move it, or delete it.
+
+Deleting a folder restores individual Home shortcuts without uninstalling apps. Folders are stored locally, independently of the theme and saved app order. Apps already assigned to another folder are omitted from the picker. Up to 24 folders and 64 members per folder are supported; nested folders and module cards are excluded. Add an app from the library to Home before selecting it for a folder. Temporarily unavailable members retain their membership and return when available again.
+
+## Wallpapers and ambient clock
+
+Without latitude and longitude configured:
 
 | Period | Wallpaper | Time |
 |---|---|---|
@@ -24,30 +66,18 @@ Without latitude and longitude configured in the launcher:
 | Afternoon | `wallpapers/02-afternoon.png` | 12:00–19:00 |
 | Night | `wallpapers/03-night.jpg` | 19:00–07:00 |
 
-With coordinates configured, morning starts at sunrise and night starts 30 minutes after sunset. The launcher evaluates the wallpaper while Home is active; this is not a background scheduling service. The theme changes the backdrop, not the text palette.
+With coordinates, morning starts at sunrise and night starts 30 minutes after sunset. Wallpaper changes are evaluated while the launcher or its clock is visible, without a background scheduling service.
 
-## App library and Home visibility
+After five minutes without input on Home, the existing clock screensaver shows the wallpaper with a smaller drifting clock and date, 35% wallpaper dimming and no coloured glow. It pauses its Home timer while another window has focus, including the library, dialogs, settings and other apps. The first ordinary key is consumed and returns to Home; Android may handle system or dedicated app buttons itself.
 
-The theme enables the launcher's existing App library, with one button in the top bar and no extra library pill below the grid. These are existing launcher options, not a new folder feature.
+Set `home_idle_clock_minutes` to `0` to disable it, or another number to change the delay. The other existing options are `clock_wallpaper`, `clock_wallpaper_dim` and `clock_glow`. The TV's own screensaver and sleep settings are preserved.
 
-- Hold OK on a Home tile and choose **Remove from Home** to hide its shortcut. The app stays installed.
-- Open **App library** to access installed launchable apps, including those removed from Home. Press OK to open an app.
-- Hold OK on an app in the library and choose **Add to Home** to restore its shortcut.
+## Validation and limits
 
-Home visibility choices survive launcher restarts, theme changes and theme resets. The library is a single list, not a set of named folders. Its top-bar button and opening the library were verified on the TCL described below; removing and restoring individual shortcuts still need owner verification.
+Tested on **TCL G10 / Smart TV, Android TV 12, firmware STT2.230203.001**, over Ethernet, and an Android TV 14 ARM64 emulator.
 
-## Solid appearance
-
-Set `dock_glass` to `false`, `dock_opacity` to `100` and `glass_style` to `"rim"`, then reapply the theme.
-
-## Validation and remaining work
-
-A device-specific copy of this theme was installed on a **TCL G10, Android TV 12, firmware STT2.230203.001**. The night wallpaper, translucent dock and five-app layout were inspected in real TV captures. The library button and opening its app list were checked on the TV. Physical Home and held-volume repeat worked with the optional TCL profile, and the owner confirmed that standby/off-on returned to CleanYourTV. The Home helper and configuration survived a full reboot, but Google TV was initially visible; injected Home then opened CleanYourTV. Automatic CleanYourTV display immediately after a full reboot is not established.
-
-The [TCL setup and rollback guide](TCL-G10.md) documents the optional profile, its accessibility helper and how to return to Google TV. Google TV and every previously enabled package were left enabled. The session ended with debugging disabled, authorizations revoked and the ADB port refusing connections. Private backups, device addresses and raw diagnostic files stay outside Git.
-
-Launcher build validation: 240 JVM tests passed, lint had zero errors and the release APK was 530,097 bytes, below the 589,824-byte gate. The initial draft Python suite ran 1,340 tests with 12 skipped and three catalog failures: missing screenshot, missing catalog row and theme count. See the commit validation for subsequent runs.
-
-Still pending: day/afternoon legibility, observing scheduled wallpaper transitions, removing/restoring library shortcuts, explicit Echo commands, and full D-pad edge coverage. Alexa depends on the TV's existing integration; this theme does not add Alexa support.
-
-Before catalog inclusion, supply a real Home screenshot (`screenshot.jpg`, 1280×720, at most 300 KB), add the catalog row and update the theme count together. Captures from this session remain local; generated mockups are not device screenshots. The three user-supplied wallpapers are preserved without modification. Confirm redistribution rights and prepare 1920×1080 versions below about 300 KB before upstream submission. No sunset wallpaper is included.
+- Real-TV captures cover Home artwork, dock spacing, the library header, settings and automatic entry into the ambient clock. OK returned from the clock without launching an app. Its delay was temporarily one minute for verification, then restored to five.
+- Folder creation, opening, persistence across APK updates and deletion were checked in the emulator; the Create folder menu was verified on the TV. Full folder editing and edge navigation still need physical-remote verification.
+- The owner confirmed Home and off/on operation after enabling the optional TCL Home helper. This does not establish behavior after disconnecting mains power on other firmware.
+- Final build and test evidence belongs in the PR description. No APKs, ADB keys, private backups or raw device diagnostics are committed.
+- Alexa continues to depend on the TV's existing integration. This theme adds no voice assistant or subscription recommendations.

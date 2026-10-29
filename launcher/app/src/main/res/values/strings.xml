@@ -152,4 +152,21 @@
     <!-- Cinematic top shelf (cinematic_home): the line under the focused dock app's name; %1$s is when it was
          last opened, e.g. "5 minutes ago" or "yesterday, 9:40 pm". -->
     <string name="last_opened">Last opened %1$s</string>
+    <!-- game_day: a game on now, in the race panel. -->
+    <string name="game_live">Live now</string>
+    <string name="appearance_finish">Appearance</string>
+    <string name="appearance_glass">Glass</string>
+    <string name="appearance_solid">Solid</string>
+    <string name="appearance_dim">Wallpaper dimming</string>
+    <string name="appearance_palette">Color mode</string>
+    <string name="appearance_dark">Dark</string>
+    <string name="appearance_light">Light</string>
+    <string name="appearance_auto">Automatic</string>
+    <string name="appearance_restore">Restore theme appearance</string>
+    <string name="folder_create">Create folder</string>
+    <string name="folder_edit">Edit folder</string>
+    <string name="folder_delete">Delete folder</string>
+    <string name="folder_name">Folder name (1–40 characters)</string>
+    <string name="folder_choose_apps">Choose between 1 and 64 apps.</string>
+    <string name="folder_delete_hint">The apps return to Home as individual shortcuts.</string>
 </resources>

@@ -117,8 +117,8 @@
     <string name="library_hint_add">Presiona para agregar a Inicio · Mantén presionado para ver opciones</string>
     <string name="library_hint_open">Presiona para abrir · Mantén presionado para ver opciones</string>
     <plurals name="library_app_count">
-        <item quantity="one">%1$d aplicación</item>
-        <item quantity="other">%1$d aplicaciones</item>
+        <item quantity="one">%1$d app</item>
+        <item quantity="other">%1$d apps</item>
     </plurals>
     <string name="greeting_with_name">%1$s, %2$s</string>
     <string name="race_kicker">Ronda %1$d · %2$s · %3$s</string>
@@ -145,4 +145,15 @@
     <string name="race_countdown_hours">%1$dh %2$dm</string>
     <string name="race_countdown_days">%1$dd %2$dh</string>
     <string name="last_opened">Última apertura: %1$s</string>
+    <string name="appearance_finish">Apariencia</string>
+    <string name="appearance_glass">Cristal</string>
+    <string name="appearance_solid">Sólido</string>
+    <string name="appearance_dim">Oscurecimiento del fondo</string>
+    <string name="game_live">En vivo</string>
+    <string name="folder_create">Crear carpeta</string>
+    <string name="folder_edit">Editar carpeta</string>
+    <string name="folder_delete">Eliminar carpeta</string>
+    <string name="folder_name">Nombre de la carpeta (1–40 caracteres)</string>
+    <string name="folder_choose_apps">Selecciona entre 1 y 64 apps.</string>
+    <string name="folder_delete_hint">Las apps vuelven a Inicio como accesos individuales.</string>
 </resources>

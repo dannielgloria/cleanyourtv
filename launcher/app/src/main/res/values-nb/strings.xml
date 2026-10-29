@@ -110,4 +110,9 @@
     <string name="race_live">%1$s · direkte</string>
     <string name="race_finished">Målgang</string>
     <string name="last_opened">Sist åpnet %1$s</string>
+    <string name="game_live">Direkte nå</string>
+    <string name="appearance_finish">Appearance</string>
+    <string name="appearance_glass">Glass</string>
+    <string name="appearance_solid">Solid</string>
+    <string name="appearance_dim">Wallpaper dimming</string>
 </resources>

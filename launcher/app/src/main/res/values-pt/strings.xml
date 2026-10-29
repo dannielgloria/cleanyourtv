@@ -147,4 +147,9 @@
     <string name="race_countdown_hours">%1$dh %2$dmin</string>
     <string name="race_countdown_days">%1$dd %2$dh</string>
     <string name="last_opened">Aberto %1$s</string>
+    <string name="game_live">Ao vivo agora</string>
+    <string name="appearance_finish">Appearance</string>
+    <string name="appearance_glass">Glass</string>
+    <string name="appearance_solid">Solid</string>
+    <string name="appearance_dim">Wallpaper dimming</string>
 </resources>

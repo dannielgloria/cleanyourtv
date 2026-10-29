@@ -45,6 +45,16 @@ public class TileFitTest {
     }
 
     @Test
+    public void minimalDockGapStillLeavesRoomForTheRequestedRows() {
+        int gap = Math.round(DockDecoration.MINIMAL_ROW_GAP_DP * D);
+        for (int columns = 4; columns <= 7; columns++) {
+            int floor = Math.round(AppAdapter.tileWidthPx(INNER, columns, D) * AppAdapter.MIN_HEIGHT_FIT);
+            int width = AppAdapter.tileWidthPx(INNER, GRID_H - gap, columns, 1, true, true, D);
+            if (width > floor) assertTrue("columns " + columns, height(width, 1, true) + gap <= GRID_H + 2);
+        }
+    }
+
+    @Test
     public void moreRowsStopAtTheFloorInsteadOfShrinkingTheTiles() {
         // Two or three rows under a titled dock would need tiles under half their size: they stop at 85% and
         // the extra rows run off the bottom instead.

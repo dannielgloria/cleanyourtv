@@ -7,7 +7,7 @@
   "dock_band": true,
   "dock_even_padding": true,
   "dock_opacity": 50,
-  "glass_style": "glass",
+  "glass_style": "halo",
   "cinematic_home": false,
   "ambient_glow": false,
   "app_glow": false,
@@ -50,5 +50,14 @@
   "app_library_selection": false,
   "tile_menu": true,
   "stock_home_redirect": "com.google.android.apps.tv.launcherx",
-  "key_filter": true
+  "key_filter": true,
+  "consume_volume_keys": true,
+  "power_on_home_always": true,
+  "glass_header": true,
+  "uniform_tiles": true,
+  "animations": true,
+  "home_idle_clock_minutes": 5,
+  "clock_wallpaper": true,
+  "clock_wallpaper_dim": 35,
+  "clock_glow": false
 }

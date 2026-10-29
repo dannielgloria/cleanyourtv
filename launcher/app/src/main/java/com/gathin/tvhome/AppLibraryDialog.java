@@ -32,6 +32,7 @@ import androidx.dynamicanimation.animation.FloatPropertyCompat;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.text.Collator;
@@ -103,6 +104,10 @@ final class AppLibraryDialog {
     private float scrollOffset;
     private boolean highlightShown;
     private final int catalogWidth;
+    private final boolean minimal;
+    private final Config appearance;
+    private TextView homeButton;
+    private int gridColumns = 4;
 
     private void stopHighlight() {
         if (spring != null) spring.cancel();
@@ -143,8 +148,14 @@ final class AppLibraryDialog {
         if (popup.isShowing()) popup.update(width, height);
     }
 
-    AppLibraryDialog(Activity activity, boolean animations, boolean reducedMotion, boolean selectionMode, boolean okOpens, Predicate<String> onHome, Runnable changed, Runnable dismissed) {
+    /** library_excluded_apps (config.xml), never offered in the catalogue; empty by default, so existing
+     *  setups are unaffected. See LibraryApps.excludedFromCatalog(). */
+    private final Set<String> excludedApps;
+
+    AppLibraryDialog(Activity activity, boolean animations, boolean reducedMotion, boolean selectionMode, boolean okOpens, Predicate<String> onHome, Runnable changed, Runnable dismissed, Set<String> excludedApps) {
         this.activity = activity;
+        appearance = Config.load(activity);
+        minimal = appearance.glassHeader;
         this.animations = animations;
         this.rtl = activity.getResources().getBoolean(R.bool.rtl_app_grid);
         this.reducedMotion = reducedMotion;
@@ -153,12 +164,16 @@ final class AppLibraryDialog {
         this.onHome = onHome;
         this.changed = changed;
         this.dismissed = dismissed;
+        this.excludedApps = excludedApps;
         density = activity.getResources().getDisplayMetrics().density;
         panel = new LinearLayout(activity);
         panel.setLayoutDirection(rtl ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR);
         panel.setOrientation(LinearLayout.VERTICAL);
         panel.setPadding(dp(12), dp(8), dp(12), dp(12));
         panel.setBackgroundResource(R.drawable.glass_panel);
+        if (minimal) panel.setBackground(surface(((Appearance.solid(activity) ? 255
+                : Math.max(242, appearance.dockOpacity * 255 / 100)) << 24)
+                | (Appearance.panel(activity) & 0x00FFFFFF), 24));
         View decor = activity.getWindow().getDecorView();
         catalogWidth = Math.min(dp(800), Math.max(dp(200), decor.getWidth() - dp(64)));
         int width = catalogWidth;
@@ -190,17 +205,25 @@ final class AppLibraryDialog {
         load(true);
     }
 
+    private AppFolders.Folder folder;
+
+    void setFolder(AppFolders.Folder folder) { this.folder = folder; }
+
     private void reveal() {
         popup.showAtLocation(activity.getWindow().getDecorView(), Gravity.CENTER, 0, 0);
         View container = panel.getRootView();
         if (container.getLayoutParams() instanceof WindowManager.LayoutParams) {
             WindowManager.LayoutParams params = (WindowManager.LayoutParams) container.getLayoutParams();
             params.flags |= WindowManager.LayoutParams.FLAG_DIM_BEHIND;
-            params.dimAmount = 0.55f;
+            params.dimAmount = minimal ? 0.72f : 0.55f;
             activity.getWindowManager().updateViewLayout(container, params);
         }
-        panel.setAlpha(0f);
-        panel.animate().alpha(1f).setDuration(reducedMotion ? Motion.REDUCED_MS : 180).start();
+        if (minimal) {
+            Motion.reveal(panel, animations, reducedMotion);
+        } else {
+            panel.setAlpha(animations ? 0f : 1f);
+            if (animations) panel.animate().alpha(1f).setDuration(reducedMotion ? Motion.REDUCED_MS : 180).start();
+        }
     }
 
     /** Called by the activity's existing package receiver; an uninstall cannot leave a stale action. */
@@ -220,6 +243,8 @@ final class AppLibraryDialog {
         int load = loads.start(reveal);
         PackageManager pm = activity.getPackageManager();
         String self = activity.getPackageName();
+        Set<String> folderMembers = folder == null ? null : new HashSet<>();
+        if (folderMembers != null) for (String pkg : folder.packages) if (onHome.test(pkg)) folderMembers.add(pkg);
         LOADER.execute(() -> {
             Map<String, ResolveInfo> unique = new LinkedHashMap<>();
             Set<String> tv = new HashSet<>();
@@ -229,7 +254,9 @@ final class AppLibraryDialog {
                     if (info.activityInfo == null || !info.activityInfo.exported) continue;
                     String pkg = info.activityInfo.packageName;
                     if (Intent.CATEGORY_LEANBACK_LAUNCHER.equals(category)) tv.add(pkg);
-                    if (!pkg.equals(self) && !unique.containsKey(pkg)) unique.put(pkg, info);
+                    if (!pkg.equals(self) && !LibraryApps.excludedFromCatalog(excludedApps, pkg)
+                            && (folderMembers == null || folderMembers.contains(pkg))
+                            && !unique.containsKey(pkg)) unique.put(pkg, info);
                 }
             }
             Map<String, String> names = new HashMap<>();
@@ -345,21 +372,41 @@ final class AppLibraryDialog {
 
     private void showCatalog() {
         stopHighlight();
-        resize(catalogWidth, dp(280));
+        resize(catalogWidth, minimal ? Math.min(dp(460), activity.getWindow().getDecorView().getHeight() - dp(64)) : dp(280));
         panel.removeAllViews();
         LinearLayout header = new LinearLayout(activity);
+        header.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         header.setGravity(Gravity.CENTER_VERTICAL);
         header.setPadding(dp(12), dp(4), dp(8), dp(4));
-        TextView title = text(activity.getString(R.string.app_library), 22, Color.WHITE);
+        TextView title = text(folder == null ? activity.getString(R.string.app_library) : folder.name, 22, Color.WHITE);
         header.addView(title, new LinearLayout.LayoutParams(0, dp(36), 1));
-        title.setGravity(Gravity.CENTER_VERTICAL);
+        title.setGravity(Gravity.CENTER_VERTICAL | (rtl ? Gravity.RIGHT : Gravity.LEFT));
         title.setSingleLine(true);
         title.setEllipsize(TextUtils.TruncateAt.END);
         TextView count = text(activity.getResources().getQuantityString(
                 R.plurals.library_app_count, totalApps, totalApps), 13, 0xA6FFFFFF);
         count.setSingleLine(true);
         header.addView(count, new LinearLayout.LayoutParams(-2, -2));
-        panel.addView(header, new LinearLayout.LayoutParams(-1, dp(44)));
+        // The launcher has no global supportsRtl: explicitly mirror this horizontal row.
+        if (rtl) {
+            header.removeView(count);
+            header.addView(count, 0);
+            count.setPadding(0, 0, dp(12), 0);
+        }
+        if (minimal) {
+            homeButton = headerButton(R.drawable.ic_header_home, R.string.app_name, this::close);
+            LinearLayout.LayoutParams homeParams = new LinearLayout.LayoutParams(dp(42), dp(42));
+            homeParams.setMarginStart(dp(16));
+            header.addView(homeButton, homeParams);
+            TextView settings = headerButton(R.drawable.ic_header_settings, R.string.launcher_settings, () -> {
+                close();
+                activity.startActivity(new Intent(activity, LauncherSettingsActivity.class));
+            });
+            LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(dp(42), dp(42));
+            buttonParams.setMarginStart(dp(8));
+            header.addView(settings, buttonParams);
+        }
+        panel.addView(header, new LinearLayout.LayoutParams(-1, dp(minimal ? 52 : 44)));
         instructions = text(hint(false), 13, 0xBBFFFFFF);
         instructions.setSingleLine(true);
         instructions.setEllipsize(TextUtils.TruncateAt.END);
@@ -380,7 +427,9 @@ final class AppLibraryDialog {
         RecyclerView list = new RecyclerView(activity);
         list.setLayoutDirection(rtl ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR);
         catalog = list;
-        list.setLayoutManager(new LinearLayoutManager(activity, RecyclerView.HORIZONTAL, false) {
+        gridColumns = Math.max(2, Math.min(5, (catalogWidth - dp(44)) / dp(140)));
+        if (minimal) list.setLayoutManager(new GridLayoutManager(activity, gridColumns));
+        else list.setLayoutManager(new LinearLayoutManager(activity, RecyclerView.HORIZONTAL, false) {
             @Override protected boolean isLayoutRTL() { return rtl; }
         });
         list.setItemAnimator(null);
@@ -391,6 +440,7 @@ final class AppLibraryDialog {
         shelf.addView(list, new FrameLayout.LayoutParams(-1, -1));
         highlight = new GlassView(activity, null);
         highlight.setRadius(dp(20));
+        if (minimal) highlight.setStyle(appearance.glassStyle);
         highlight.setAlpha(0f);
         highlight.setFocusable(false);
         highlight.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
@@ -406,6 +456,7 @@ final class AppLibraryDialog {
             @Override public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
                 scrollOffset += dx;
                 highlight.setTranslationX(highlight.getTranslationX() - dx);
+                if (minimal) highlight.setTranslationY(highlight.getTranslationY() - dy);
             }
         });
         panel.addView(shelf, new LinearLayout.LayoutParams(-1, 0, 1));
@@ -420,6 +471,28 @@ final class AppLibraryDialog {
             RecyclerView.ViewHolder holder = list.findViewHolderForAdapterPosition(target);
             if (holder != null) holder.itemView.requestFocus();
         });
+    }
+
+    private TextView headerButton(int icon, int label, Runnable action) {
+        TextView button = text("", 16, Color.WHITE);
+        button.setGravity(Gravity.CENTER);
+        button.setPadding(dp(9), 0, dp(9), 0);
+        button.setContentDescription(activity.getString(label));
+        button.setFocusable(true);
+        HeaderGlass.apply(button, icon);
+        button.setOnClickListener(v -> action.run());
+        button.setOnFocusChangeListener((v, focused) -> {
+            if (focused && highlight != null) highlight.setAlpha(0f);
+        });
+        button.setOnKeyListener((v, key, event) -> {
+            if (event.getAction() == KeyEvent.ACTION_DOWN && key == KeyEvent.KEYCODE_DPAD_DOWN && catalog != null) {
+                RecyclerView.ViewHolder holder = catalog.findViewHolderForAdapterPosition(selectedPosition);
+                if (holder != null) holder.itemView.requestFocus();
+                return true;
+            }
+            return event.getAction() == KeyEvent.ACTION_DOWN && key == KeyEvent.KEYCODE_DPAD_UP;
+        });
+        return button;
     }
 
     private void dismissActions() {
@@ -583,6 +656,8 @@ final class AppLibraryDialog {
     private TextView text(String value, int size, int color) {
         TextView view = new TextView(activity);
         view.setText(value);
+        view.setTextDirection(rtl ? View.TEXT_DIRECTION_RTL : View.TEXT_DIRECTION_FIRST_STRONG);
+        view.setGravity(rtl ? Gravity.RIGHT : Gravity.LEFT);
         view.setTextSize(size);
         view.setTextColor(color);
         view.setTypeface(UiFont.get(activity, R.string.font_medium));
@@ -596,8 +671,9 @@ final class AppLibraryDialog {
     private final class Catalog extends RecyclerView.Adapter<Row> {
         @NonNull @Override public Row onCreateViewHolder(@NonNull ViewGroup parent, int type) {
             FrameLayout row = new FrameLayout(activity);
-            RecyclerView.LayoutParams params = new RecyclerView.LayoutParams(dp(132), dp(170));
-            params.setMargins(dp(6), dp(2), dp(6), dp(2));
+            RecyclerView.LayoutParams params = new RecyclerView.LayoutParams(minimal
+                    ? (catalogWidth - dp(44)) / gridColumns - dp(12) : dp(132), dp(170));
+            params.setMargins(dp(6), dp(minimal ? 6 : 2), dp(6), dp(minimal ? 6 : 2));
             row.setLayoutParams(params);
             row.setPadding(dp(10), dp(12), dp(10), dp(10));
             row.setFocusableInTouchMode(true);
@@ -610,14 +686,14 @@ final class AppLibraryDialog {
             icon.setId(R.id.icon);
             icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
             content.addView(icon, new LinearLayout.LayoutParams(dp(60), dp(60)));
-            TextView name = text("", 15, Color.WHITE);
+            TextView name = text("", 15, minimal ? Appearance.text(activity) : Color.WHITE);
             name.setId(R.id.title);
             name.setGravity(Gravity.CENTER);
             name.setMaxLines(2);
             LinearLayout.LayoutParams nameParams = new LinearLayout.LayoutParams(-1, dp(44));
             nameParams.topMargin = dp(10);
             content.addView(name, nameParams);
-            TextView status = text("", 11, 0xBBFFFFFF);
+            TextView status = text("", 11, minimal && Appearance.light(activity) ? 0xBB132033 : 0xBBFFFFFF);
             status.setId(R.id.status);
             status.setGravity(Gravity.CENTER);
             status.setMaxLines(2);
@@ -665,6 +741,16 @@ final class AppLibraryDialog {
             });
             holder.itemView.setOnKeyListener((v, key, event) -> {
                 int index = holder.getBindingAdapterPosition();
+                if (minimal) {
+                    if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
+                    if (key == KeyEvent.KEYCODE_DPAD_UP && index < gridColumns) {
+                        homeButton.requestFocus();
+                        return true;
+                    }
+                    if (key == KeyEvent.KEYCODE_DPAD_DOWN && index / gridColumns == (apps.size() - 1) / gridColumns) return true;
+                    return (key == KeyEvent.KEYCODE_DPAD_LEFT && (rtl ? index % gridColumns == gridColumns - 1 || index == apps.size() - 1 : index % gridColumns == 0))
+                            || (key == KeyEvent.KEYCODE_DPAD_RIGHT && (rtl ? index % gridColumns == 0 : index % gridColumns == gridColumns - 1 || index == apps.size() - 1));
+                }
                 return event.getAction() == KeyEvent.ACTION_DOWN && (key == KeyEvent.KEYCODE_DPAD_UP
                         || key == KeyEvent.KEYCODE_DPAD_DOWN
                         || (rtl ? key == KeyEvent.KEYCODE_DPAD_RIGHT : key == KeyEvent.KEYCODE_DPAD_LEFT) && index == 0

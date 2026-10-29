@@ -14,6 +14,14 @@ import androidx.recyclerview.widget.RecyclerView;
 /** Draws the tvOS style lighter band behind the first (dock) row and adds a gap below it. */
 public class DockDecoration extends RecyclerView.ItemDecoration {
 
+    static final int MINIMAL_ROW_GAP_DP = 16;
+    private int rowGapPx;
+
+    /** Additional clearance before the first row outside the dock. */
+    void setRowGap(int pixels) {
+        rowGapPx = pixels;
+    }
+
     private final int dockSize;
     private final float density;
     private final Paint band = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -79,6 +87,7 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
     public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent,
                                @NonNull RecyclerView.State state) {
         int pos = parent.getChildAdapterPosition(view);
+        if (!singleRow && pos >= dockSize && pos < dockSize * 2) outRect.top += rowGapPx;
         if (pos >= 0 && (singleRow || pos < dockSize)) {
             outRect.top = (int) (6 * density);
             outRect.bottom = (int) (12 * density);

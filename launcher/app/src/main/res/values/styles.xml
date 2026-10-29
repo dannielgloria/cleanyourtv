@@ -53,4 +53,39 @@
         <item name="android:layout_marginEnd">10dp</item>
         <item name="android:gravity">center</item>
     </style>
+    <!-- Opt-in settings/dialog palette: preserves Android D-pad, radio and accessibility behaviour. -->
+    <style name="Theme.TvHome.MinimalGlass" parent="Theme.TvHome">
+        <item name="android:alertDialogTheme">@style/Theme.TvHome.MinimalDialog</item>
+        <item name="android:colorAccent">#FFFFFFFF</item>
+    </style>
+    <style name="Theme.TvHome.MinimalDialog" parent="android:Theme.Material.Dialog.Alert">
+        <item name="android:windowBackground">@drawable/minimal_dialog_panel</item>
+        <item name="android:colorBackground">#FF101824</item>
+        <item name="android:colorAccent">#FFFFFFFF</item>
+        <item name="android:textColorPrimary">#FFFFFFFF</item>
+        <item name="android:textColorSecondary">#FFBBC5D4</item>
+        <item name="android:colorControlNormal">#FFBBC5D4</item>
+        <item name="android:colorControlActivated">#FFFFFFFF</item>
+        <item name="android:listSelector">@drawable/minimal_choice_bg</item>
+        <item name="android:backgroundDimAmount">0.72</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
+    <style name="Theme.TvHome.MinimalLight" parent="Theme.TvHome">
+        <item name="android:alertDialogTheme">@style/Theme.TvHome.MinimalLightDialog</item>
+        <item name="android:colorAccent">#FF132033</item>
+    </style>
+    <style name="Theme.TvHome.MinimalLightDialog" parent="android:Theme.Material.Dialog.Alert">
+        <item name="android:windowBackground">@drawable/minimal_dialog_panel_light</item>
+        <item name="android:colorBackground">#FFF4F7FB</item>
+        <item name="android:colorAccent">#FF132033</item>
+        <item name="android:textColorPrimary">#FF132033</item>
+        <item name="android:textColorSecondary">#FF506174</item>
+        <item name="android:colorControlNormal">#FF506174</item>
+        <item name="android:colorControlActivated">#FF132033</item>
+        <item name="android:listSelector">@drawable/minimal_choice_bg_light</item>
+        <item name="android:backgroundDimAmount">0.48</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
 </resources>

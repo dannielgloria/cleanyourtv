@@ -120,4 +120,9 @@
     <string name="race_qualifying">Kval</string>
     <string name="race_race">Lopp</string>
     <string name="last_opened">Senast öppnad %1$s</string>
+    <string name="game_live">Direkt nu</string>
+    <string name="appearance_finish">Appearance</string>
+    <string name="appearance_glass">Glass</string>
+    <string name="appearance_solid">Solid</string>
+    <string name="appearance_dim">Wallpaper dimming</string>
 </resources>
